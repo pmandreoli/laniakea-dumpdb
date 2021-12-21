@@ -1,20 +1,78 @@
 #!/bin/bash
 # Script that:
-#- dump galaxy galaxy-tools db in /tmp/dump
-#- create the _conda directory and shed_tool dir tarball  in /tmp/dump
-#- copy the shed_tool_conf.xml file  in /tmp/dump
+#- dump galaxy galaxy-tools db in $DUMP_DIR
+#- create the _conda directory and shed_tool dir tarball  in $DUMP_DIR
+#- copy the shed_tool_conf.xml file  in $DUMP_DIR
+
+DUMP_ROOT=/tmp/dump
+G_CONFIG_DIR=/home/galaxy/galaxy/config
+G_SHEDTOOLS_DIR=/home/galaxy/galaxy/var/shed_tools
+G_CONDA_DIR=/export/tool_deps/_conda
+
+usage() { echo "Usage: $0 [-f flavour_name ] [-v  flavour_version ]" 1>&2; exit 1; }
+
+while getopts "d:c:s:t:v:f:p" o; do
+    case "${o}" in
+
+        d)
+            DUMP_ROOT=${OPTARG}
+            ;;
+        c)
+            G_CONFIG_DIR=${OPTARG}
+            ;;
+        s)
+            G_SHEDTOOLS_DIR=${OPTARG}
+            ;;
+        t)
+            G_CONDA_DIR=${OPTARG}
+            ;;
+        v)
+            f_version=${OPTARG}
+            ;;
+        f)
+            f_name=${OPTARG}
+            ;;
+        p)
+           pigz=true
+           ;;
+        *)
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+if [ -z "${f_version}" ] || [ -z "${f_name}" ]; then
+    usage
+fi
+
+DUMP_DIR=${DUMP_ROOT}/${f_name}_${f_version}
 
 sudo su - postgres << BASH
 pg_dump -f galaxy_tools.psql galaxy_tools;
 BASH
 
 sudo su - root << ROOT
-mkdir -p /tmp/dump && chown -R galaxy:galaxy /tmp/dump ; 
-mv /var/lib/pgsql/galaxy_tools.psql /tmp/dump/dump.psql &>/tmp/dump/dump.log &
-cp /home/galaxy/galaxy/config/shed_tool_conf.xml /tmp/dump &>> /tmp/dump/dump.log &
-tar pcvzf /tmp/dump/tar_shed_tools.tar.gz /home/galaxy/galaxy/var/shed_tools/ &>>/tmp/dump/dump.log && echo 'Shed_tool dump_package created' &
-tar pcvzf /tmp/dump/tar_conda.tar.gz /export/tool_deps/_conda &>>/tmp/dump/dump.log && echo 'Conda dump_package created' & 
+mkdir -p $DUMP_DIR && chown -R galaxy:galaxy $DUMP_DIR ;
+mv /var/lib/pgsql/galaxy_tools.psql $DUMP_DIR/dump.psql &>$DUMP_DIR/dump.log &
+cp $G_CONFIG_DIR/shed_tool_conf.xml $DUMP_DIR &>> $DUMP_DIR/dump.log &
+if ( $pigz )
+
+then
+echo "using pigz";
+
+tar cf $DUMP_DIR/tar_shed_tools.tar.gz -I pigz $G_SHEDTOOLS_DIR/ &>>$DUMP_DIR/dump.log && echo 'Shed_tool dump_package created' &
+tar cf $DUMP_DIR/tar_conda.tar.gz -I pigz $G_CONDA_DIR &>>$DUMP_DIR/dump.log && echo 'Conda dump_package created' &
+
+else
+
+tar pcvzf $DUMP_DIR/tar_shed_tools.tar.gz $G_SHEDTOOLS_DIR/ &>>$DUMP_DIR/dump.log && echo 'Shed_tool dump_package created' &
+tar pcvzf $DUMP_DIR/tar_conda.tar.gz $G_CONDA_DIR &>>$DUMP_DIR/dump.log && echo 'Conda dump_package created' &
+
+fi
+
 wait
 echo "packages created"
 
 ROOT
+
