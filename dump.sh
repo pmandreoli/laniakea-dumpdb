@@ -9,7 +9,17 @@ G_DIR=/home/galaxy/galaxy
 G_SHEDTOOLS_DIR=/home/galaxy/galaxy/var/shed_tools
 G_CONDA_DIR=/export/tool_deps/_conda
 
-usage() { echo "Usage: $0 [-f flavour_name ] [-v  flavour_version ]" 1>&2; exit 1; }
+usage() { echo "Usage $0:
+-f flavour_name 
+-v flavour_version 
+optional:
+
+-d dump_dir: directory that will contain the flavour package Files DEFAULT: /tmp/dump
+-c galaxy root directory DEFAULT /home/galaxy/galaxy
+-s galaxy shedtools dir  DEFAULT /home/galaxy/galaxy/var/shed_tools
+-t conda dir DEFAULT /export/tool_deps/_conda
+-p use pigz for faster gzip
+	" 1>&2; exit 1; }
 
 while getopts "d:c:s:t:v:f:p" o; do
     case "${o}" in
