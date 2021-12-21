@@ -4,3 +4,5 @@ simple bash script to perform:
 - copy of tools 
 - copy of conda dir
 - copy of shed_tool_conf.xml
+
+## run as sudo

@@ -5,7 +5,7 @@
 #- copy the shed_tool_conf.xml file  in $DUMP_DIR
 
 DUMP_ROOT=/tmp/dump
-G_DIR=/home/galaxy/galaxy/config
+G_DIR=/home/galaxy/galaxy
 G_SHEDTOOLS_DIR=/home/galaxy/galaxy/var/shed_tools
 G_CONDA_DIR=/export/tool_deps/_conda
 
@@ -53,8 +53,7 @@ sudo su - postgres << BASH
 pg_dump -f galaxy_tools.psql galaxy_tools;
 BASH
 
-sudo su - root << ROOT
-g_version=$(cd $G_SERVER_DIR && git branch | awk '/release/ { print $2}')
+g_version=$( cd $G_SERVER_DIR && git branch | awk '/release/ { print $2}')
 DUMP_DIR=${DUMP_ROOT}/${g_version}_${f_name}_${f_version}
 mkdir -p $DUMP_DIR && chown -R galaxy:galaxy $DUMP_DIR ;
 mv /var/lib/pgsql/galaxy_tools.psql $DUMP_DIR/dump.psql &>$DUMP_DIR/dump.log &
@@ -76,6 +75,4 @@ fi
 
 wait
 echo "packages created"
-
-ROOT
 
